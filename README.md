@@ -1,3 +1,7 @@
+##  To install SRJ-THEME INTO YOUR PTERODACTYL PANEL FOLLOW THE INSTALLATION 
+# Automated installation 
+
 '''
-https://github.com/TS-25/SRJ-THEME/releases/latest/download/srj-theme.tar.gz
+bash <(curl -s https://raw.githubusercontent.com/TS-25/SRJ-THEME/refs/heads/main/install)
+
 '''
