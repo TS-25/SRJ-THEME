@@ -13,19 +13,6 @@ cd /var/www/pterodactyl
 export NODE_OPTIONS=--openssl-legacy-provider
 yarn build:production
 
-# theme install
-echo 'theme installing'
-
-cd /var/www/pterodactyl
-curl -L https://github.com/TS-25/SRJ-THEME/releases/latest/download/srj-theme.tar.gz | tar -xzv
-node -v
-export NODE_OPTIONS=--openssl-legacy-provider
-php artisan arix install
-chmod -R 755 storage/* bootstrap/cache
-php artisan migrate --force
-php artisan optimize:clear
-php artisan optimize
 
 
 
-echo 'Done,made by tanvir sami'
