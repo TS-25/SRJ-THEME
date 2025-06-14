@@ -26,3 +26,7 @@ chmod +x blueprint.sh
 bash blueprint.sh
 
 # theme 
+
+cd /var/www/pterodactyl 
+curl -L https://github.com/TS-25/SRJ-THEME/releases/latest/download/nebula.blueprint
+blueprint -install nebula
