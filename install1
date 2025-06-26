@@ -7,4 +7,4 @@ echo 'deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudf
 
 # install cloudflared
 sudo apt-get update && sudo apt-get install cloudflared
-sudo cloudflared service install eyJhIjoiMDMzOGYwM2IxZGQ0NGE1YzljMGYyYjI1MGRkMzg5ZjYiLCJ0IjoiN2ZmY2YwZDgtNDlkZS00NTZlLWEyM2ItNWQxNzkxYmFkZDkyIiwicyI6IllqWTNOVGN3Wm1NdE1XWmlaaTAwWVRObUxXRmtaR010WXpKbVpEWmhNRFV4Tm1NMSJ9
+sudo cloudflared service install eyJhIjoiMDMzOGYwM2IxZGQ0NGE1YzljMGYyYjI1MGRkMzg5ZjYiLCJ0IjoiY2ZkMDUwYjEtYTk2Mi00NmQ2LThmOTQtYTAzYjcyYTA4NmViIiwicyI6Ik5EVXpaRGt5TjJRdFlqUmlOeTAwWlRSbUxXSTFOMlF0WmpObVpqVm1ZelUyTUdRMyJ9
