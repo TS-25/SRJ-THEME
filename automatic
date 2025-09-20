@@ -20,9 +20,7 @@ install_blueprint() {
     apt install curl -y
     apt install git -y
     bash <(curl -s https://raw.githubusercontent.com/TS-25/SRJ-THEME/refs/heads/main/blueprint)
-
-
-    echo "successfull"
+    echo "✅ Blueprint installed successfully!"
 }
 
 # Function: Install Nebula Theme
@@ -30,14 +28,29 @@ install_nebula() {
     echo "🎨 Installing Nebula Theme..."
     apt install wget -y
     cd /var/www/pterodactyl || { echo "❌ Pterodactyl not found!"; exit 1; }
-
-    # Download Nebula
     wget -O nebula.blueprint https://github.com/TS-25/SRJ-THEME/releases/latest/download/nebula.blueprint
-
-    # Install via Blueprint
     blueprint -install nebula
-
     echo "✅ Nebula theme installed!"
+}
+
+# Function: Install Euphoria Theme
+install_euphoria() {
+    echo "🌌 Installing Euphoria Theme..."
+    apt install wget -y
+    cd /var/www/pterodactyl || { echo "❌ Pterodactyl not found!"; exit 1; }
+    wget -O euphoriatheme.blueprint https://github.com/TS-25/SRJ-THEME/releases/latest/download/euphoriatheme.blueprint
+    blueprint -install euphoriatheme
+    echo "✅ Euphoria theme installed!"
+}
+
+# Function: Install MC Plugin Addon
+install_mcplugins() {
+    echo "🛠️ Installing MC Plugin Addon..."
+    apt install wget -y
+    cd /var/www/pterodactyl || { echo "❌ Pterodactyl not found!"; exit 1; }
+    wget -O mcplugins.blueprint https://github.com/TS-25/SRJ-THEME/releases/latest/download/mcplugins.blueprint
+    blueprint -install mcplugins
+    echo "✅ MC Plugin Addon installed!"
 }
 
 # Menu
@@ -48,14 +61,18 @@ while true; do
     echo "==============================="
     echo "1) Install Blueprint"
     echo "2) Install Nebula Theme"
-    echo "3) Exit"
+    echo "3) Install Euphoria Theme"
+    echo "4) Install MC Plugin Addon(blueprint)"
+    echo "5) Exit"
     echo "==============================="
-    read -rp "Choose an option [1-3]: " choice
+    read -rp "Choose an option [1-5]: " choice
 
     case $choice in
         1) install_blueprint ;;
         2) install_nebula ;;
-        3) echo "👋 Exiting..."; exit 0 ;;
+        3) install_euphoria ;;
+        4) install_mcplugins ;;
+        5) echo "👋 Exiting..."; exit 0 ;;
         *) echo "❌ Invalid choice! Try again." ;;
     esac
 done
