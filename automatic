@@ -53,6 +53,14 @@ install_mcplugins() {
     echo "✅ MC Plugin Addon installed!"
 }
 
+# Function: Install Revix/Reviactyl Theme
+install_revix() {
+    echo "⚡ Installing Revix/Reviactyl Theme..."
+    apt install curl -y
+    bash <(curl -s https://raw.githubusercontent.com/TS-25/SRJ-THEME/refs/heads/main/revix-theme)
+    echo "✅ Revix/Reviactyl theme installed!"
+}
+
 # Menu
 while true; do
     echo ""
@@ -60,19 +68,21 @@ while true; do
     echo "   Main Installation Menu"
     echo "==============================="
     echo "1) Install Blueprint"
-    echo "2) Install Nebula Theme"
-    echo "3) Install Euphoria Theme"
+    echo "2) Install Nebula Theme(blueprint)"
+    echo "3) Install Euphoria Theme(blueprint)"
     echo "4) Install MC Plugin Addon(blueprint)"
-    echo "5) Exit"
+    echo "5) Install Revix/Reviactyl Theme(without blueprint)"
+    echo "6) Exit"
     echo "==============================="
-    read -rp "Choose an option [1-5]: " choice
+    read -rp "Choose an option [1-6]: " choice
 
     case $choice in
         1) install_blueprint ;;
         2) install_nebula ;;
         3) install_euphoria ;;
         4) install_mcplugins ;;
-        5) echo "👋 Exiting..."; exit 0 ;;
+        5) install_revix ;;
+        6) echo "👋 Exiting..."; exit 0 ;;
         *) echo "❌ Invalid choice! Try again." ;;
     esac
 done
