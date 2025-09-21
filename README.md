@@ -2,5 +2,5 @@
 # Automated installation 
 
 ```
-bash <(curl -s https://raw.githubusercontent.com/TS-25/SRJ-THEME/refs/heads/main/theme)
+bash <(curl -s https://install.srjhosting.dpdns.org)
 ```
