@@ -3,8 +3,8 @@
 
 # Variables
 PTERO_DIR="/var/www/pterodactyl"
-ARIX_URL="https://github.com/TS-25/SRJ-THEME/releases/download/V1.0.0/arix.zip"
-ARIX_ZIP="arix.zip"
+ARIX_URL="https://github.com/TS-25/SRJ-THEME/releases/download/V1.0.0/stellar.zip"
+ARIX_ZIP="stellar.zip"
 
 echo "=== Arix Theme Installer for Pterodactyl ==="
 
@@ -20,10 +20,6 @@ export NODE_OPTIONS=--openssl-legacy-provider # for NodeJS v17+
 yarn build:production # Build panel
 cd $PTERO_DIR || { echo "❌ Pterodactyl directory not found!"; exit 1; }
 
-# Backup existing panel
-echo "🔄 Backing up current panel..."
-cp -r $PTERO_DIR ${PTERO_DIR}-backup-$(date +%F-%H%M)
-
 # Download theme
 echo "⬇️ Downloading Arix theme..."
 wget -O $ARIX_ZIP $ARIX_URL
@@ -34,7 +30,11 @@ unzip -o $ARIX_ZIP
 
 # Remove ZIP after extraction
 rm -f $ARIX_ZIP
-
+cd /var/www/pterodactyl
+yarn add react-feather
+php artisan migrate
+yarn build:production
+php artisan view:clear
 
 
 
