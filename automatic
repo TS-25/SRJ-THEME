@@ -80,7 +80,7 @@ while true; do
     echo "3) Euphoria Theme(blueprint)"
     echo "4) Plugin Installer Addon(blueprint)(premium)"
     echo "5) Revix/Reviactyl Theme(without blueprint)"
-    echo "6) Aura theme(blueprint)
+    echo "6) Aura theme(blueprint)"
     echo "7) Exit"
     echo "==============================="
     read -rp "Choose an option [1-7]: " choice
