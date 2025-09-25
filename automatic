@@ -61,6 +61,14 @@ install_revix() {
     echo "✅ Revix/Reviactyl theme installed!"
 }
 
+# Function: install aura theme
+install_aura() {
+    echo "Installing Aura theme...."
+    apt install curl -y
+    bash <(curl -s https://raw.githubusercontent.com/TS-25/SRJ-THEME/refs/heads/main/aura-theme)
+    echo "Successfull!"
+}
+
 # Menu
 while true; do
     echo ""
@@ -72,9 +80,10 @@ while true; do
     echo "3) Euphoria Theme(blueprint)"
     echo "4) Plugin Installer Addon(blueprint)(premium)"
     echo "5) Revix/Reviactyl Theme(without blueprint)"
-    echo "6) Exit"
+    echo "6) Aura theme(blueprint)
+    echo "7) Exit"
     echo "==============================="
-    read -rp "Choose an option [1-6]: " choice
+    read -rp "Choose an option [1-7]: " choice
 
     case $choice in
         1) install_blueprint ;;
@@ -82,7 +91,8 @@ while true; do
         3) install_euphoria ;;
         4) install_mcplugins ;;
         5) install_revix ;;
-        6) echo "👋 Exiting..."; exit 0 ;;
+        6) install_aura ;;
+        7) echo "👋 Exiting..."; exit 0 ;;
         *) echo "❌ Invalid choice! Try again." ;;
     esac
 done
