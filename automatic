@@ -61,9 +61,9 @@ install_revix() {
     echo "✅ Revix/Reviactyl theme installed!"
 }
 
-# Function: Install MC Plugin Addon
+# Function: Install Subdoamin Addon
 install_subdomain() {
-    echo "🛠️ Installing MC Plugin Addon..."
+    echo "🛠️ Installing Subdomain Addon..."
     apt install wget -y
     cd /var/www/pterodactyl || { echo "❌ Pterodactyl not found!"; exit 1; }
     wget -O subdomains.blueprint https://github.com/TS-25/SRJ-THEME/releases/latest/download/subdomains.blueprint
