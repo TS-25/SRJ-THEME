@@ -111,6 +111,14 @@ install_huxregister() {
     echo "✅ HuxRegister installed!"
 }
 
+# Function: Install Apollo Theme
+install_apollo() {
+    echo "⚡ Installing Apollo Theme..."
+    apt install curl -y
+    bash <(curl -s https://raw.githubusercontent.com/TS-25/SRJ-THEME/refs/heads/main/apollo)
+    echo "✅ Apollo theme installed!"
+}
+
 # Menu
 while true; do
     echo ""
@@ -127,9 +135,10 @@ while true; do
     echo "8) Pull Files (blueprint)"
     echo "9) Player Manager (blueprint)"
     echo "10) HuxRegister (blueprint)"
-    echo "11) Exit"
+    echo "11) Apollo theme"
+    echo "12) Exit"
     echo "==============================="
-    read -rp "Choose an option [1-11]: " choice
+    read -rp "Choose an option [1-12]: " choice
 
     case $choice in
         1) install_blueprint ;;
@@ -142,7 +151,8 @@ while true; do
         8) install_pull_files ;;
         9) install_player_manager ;;
         10) install_huxregister ;;
-        11) echo "👋 Exiting..."; exit 0 ;;
+        11) install_apollo ;;
+        12) echo "👋 Exiting..."; exit 0 ;;
         *) echo "❌ Invalid choice! Try again." ;;
     esac
 done
