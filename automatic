@@ -1,158 +1,122 @@
 #!/bin/bash
+set -e
 
-set -e  # Exit on error
-
-# Banner
 clear
 echo "  _______               _      "
 echo " |__   __|             (_)     "
 echo "    | | __ _ _ ____   ___ _ __ "
-echo "    | |/ _\` | '_ \ \ / / | '__|"
-echo "    | | (_| | | | \ V /| | |   "
-echo "    |_|\__,_|_| |_|\_/ |_|_|   "
+echo "    | |/ _\` | '_ \\ \\ / / | '__|"
+echo "    | | (_| | | | \\ V /| | |   "
+echo "    |_|\\__,_|_| |_|\\_/ |_|_|   "
 echo "                               "
 echo "         Installer Script      "
 echo "==============================="
 
-# Function: Install Blueprint
 install_blueprint() {
-    echo "🔧 Installing Blueprint..."
-    apt install curl -y
-    apt install git -y
+    apt install curl git -y
     bash <(curl -s https://raw.githubusercontent.com/TS-25/SRJ-THEME/refs/heads/main/blueprint)
-    echo "✅ Blueprint installed successfully!"
 }
 
-# Function: Install Nebula Theme
+# -------- THEMES --------
 install_nebula() {
-    echo "🎨 Installing Nebula Theme..."
-    apt install wget -y
-    cd /var/www/pterodactyl || { echo "❌ Pterodactyl not found!"; exit 1; }
+    cd /var/www/pterodactyl || exit 1
     wget -O nebula.blueprint https://github.com/TS-25/SRJ-THEME/releases/latest/download/nebula.blueprint
     blueprint -install nebula
-    echo "✅ Nebula theme installed!"
 }
 
-# Function: Install Euphoria Theme
 install_euphoria() {
-    echo "🌌 Installing Euphoria Theme..."
-    apt install wget -y
-    cd /var/www/pterodactyl || { echo "❌ Pterodactyl not found!"; exit 1; }
+    cd /var/www/pterodactyl || exit 1
     wget -O euphoriatheme.blueprint https://github.com/TS-25/SRJ-THEME/releases/latest/download/euphoriatheme.blueprint
     blueprint -install euphoriatheme
-    echo "✅ Euphoria theme installed!"
 }
 
-# Function: Install MC Plugin Addon
+install_revix() {
+    bash <(curl -s https://raw.githubusercontent.com/TS-25/SRJ-THEME/refs/heads/main/revix-theme)
+}
+
+install_apollo() {
+    bash <(curl -s https://raw.githubusercontent.com/TS-25/SRJ-THEME/refs/heads/main/apollo)
+}
+
+# -------- ADDONS --------
 install_mcplugins() {
-    echo "🛠️ Installing MC Plugin Addon..."
-    apt install wget -y
-    cd /var/www/pterodactyl || { echo "❌ Pterodactyl not found!"; exit 1; }
+    cd /var/www/pterodactyl || exit 1
     wget -O mcplugins.blueprint https://github.com/TS-25/SRJ-THEME/releases/latest/download/mcplugins.blueprint
     blueprint -install mcplugins
-    echo "✅ MC Plugin Addon installed!"
 }
 
-# Function: Install Revix/Reviactyl Theme
-install_revix() {
-    echo "⚡ Installing Revix/Reviactyl Theme..."
-    apt install curl -y
-    bash <(curl -s https://raw.githubusercontent.com/TS-25/SRJ-THEME/refs/heads/main/revix-theme)
-    echo "✅ Revix/Reviactyl theme installed!"
-}
-
-# Function: Install Subdomain Addon
 install_subdomain() {
-    echo "🛠️ Installing Subdomain Addon..."
-    apt install wget -y
-    cd /var/www/pterodactyl || { echo "❌ Pterodactyl not found!"; exit 1; }
+    cd /var/www/pterodactyl || exit 1
     wget -O subdomains.blueprint https://github.com/TS-25/SRJ-THEME/releases/latest/download/subdomains.blueprint
     blueprint -install subdomains
-    echo "✅ Subdomain Addon installed!"
 }
 
-# Function: Install Resource Manager
 install_resource_manager() {
-    echo "📦 Installing Resource Manager..."
-    apt install wget -y
-    cd /var/www/pterodactyl || { echo "❌ Pterodactyl not found!"; exit 1; }
+    cd /var/www/pterodactyl || exit 1
     wget -O resourcemanager.blueprint https://github.com/TS-25/SRJ-THEME/releases/download/V1.0.0/resourcemanager.blueprint
     blueprint -install resourcemanager
-    echo "✅ Resource Manager installed!"
 }
 
-# Function: Install Pull Files
 install_pull_files() {
-    echo "📂 Installing Pull Files..."
-    apt install wget -y
-    cd /var/www/pterodactyl || { echo "❌ Pterodactyl not found!"; exit 1; }
+    cd /var/www/pterodactyl || exit 1
     wget -O pullfiles.blueprint https://github.com/TS-25/SRJ-THEME/releases/download/V1.0.0/pullfiles.blueprint
     blueprint -install pullfiles
-    echo "✅ Pull Files installed!"
 }
 
-# Function: Install Player Manager
 install_player_manager() {
-    echo "🎮 Installing Player Manager..."
-    apt install wget -y
-    cd /var/www/pterodactyl || { echo "❌ Pterodactyl not found!"; exit 1; }
+    cd /var/www/pterodactyl || exit 1
     wget -O minecraftplayermanager.blueprint https://github.com/TS-25/SRJ-THEME/releases/download/V1.0.0/minecraftplayermanager.blueprint
     blueprint -install minecraftplayermanager
-    echo "✅ Player Manager installed!"
 }
 
-# Function: Install HuxRegister
 install_huxregister() {
-    echo "📝 Installing HuxRegister..."
-    apt install wget -y
-    cd /var/www/pterodactyl || { echo "❌ Pterodactyl not found!"; exit 1; }
+    cd /var/www/pterodactyl || exit 1
     wget -O huxregister.blueprint https://github.com/TS-25/SRJ-THEME/releases/latest/download/huxregister.blueprint
     blueprint -install huxregister
-    echo "✅ HuxRegister installed!"
 }
 
-# Function: Install Apollo Theme
-install_apollo() {
-    echo "⚡ Installing Apollo Theme..."
-    apt install curl -y
-    bash <(curl -s https://raw.githubusercontent.com/TS-25/SRJ-THEME/refs/heads/main/apollo)
-    echo "✅ Apollo theme installed!"
-}
-
-# Menu
 while true; do
     echo ""
-    echo "==============================="
-    echo "   Main Installation Menu"
-    echo "==============================="
-    echo "1) Blueprint"
-    echo "2) Nebula Theme (blueprint)"
-    echo "3) Euphoria Theme (blueprint)"
-    echo "4) Plugin Installer Addon (blueprint) (premium)"
-    echo "5) Revix/Reviactyl Theme (without blueprint)"
-    echo "6) Subdomain (blueprint)"
-    echo "7) Resource Manager (blueprint)"
-    echo "8) Pull Files (blueprint)"
-    echo "9) Player Manager (blueprint)"
-    echo "10) HuxRegister (blueprint)"
-    echo "11) Apollo theme"
-    echo "12) Exit"
-    echo "==============================="
-    read -rp "Choose an option [1-12]: " choice
+    echo "1) Install Themes"
+    echo "2) Install Addons"
+    echo "3) Exit"
+    read -rp "Select option: " main
 
-    case $choice in
-        1) install_blueprint ;;
-        2) install_nebula ;;
-        3) install_euphoria ;;
-        4) install_mcplugins ;;
-        5) install_revix ;;
-        6) install_subdomain ;;
-        7) install_resource_manager ;;
-        8) install_pull_files ;;
-        9) install_player_manager ;;
-        10) install_huxregister ;;
-        11) install_apollo ;;
-        12) echo "👋 Exiting..."; exit 0 ;;
-        *) echo "❌ Invalid choice! Try again." ;;
+    case $main in
+        1)
+            echo "---- THEMES ----"
+            echo "1) Blueprint"
+            echo "2) Nebula"
+            echo "3) Euphoria"
+            echo "4) Revix/Reviactyl"
+            echo "5) Apollo"
+            read -rp "Choose theme: " t
+            case $t in
+                1) install_blueprint ;;
+                2) install_nebula ;;
+                3) install_euphoria ;;
+                4) install_revix ;;
+                5) install_apollo ;;
+            esac
+            ;;
+        2)
+            echo "---- ADDONS ----"
+            echo "1) MC Plugins"
+            echo "2) Subdomain"
+            echo "3) Resource Manager"
+            echo "4) Pull Files"
+            echo "5) Player Manager"
+            echo "6) HuxRegister"
+            read -rp "Choose addon: " a
+            case $a in
+                1) install_mcplugins ;;
+                2) install_subdomain ;;
+                3) install_resource_manager ;;
+                4) install_pull_files ;;
+                5) install_player_manager ;;
+                6) install_huxregister ;;
+            esac
+            ;;
+        3) exit 0 ;;
     esac
 done
