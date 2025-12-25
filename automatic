@@ -100,8 +100,8 @@ while true; do
             echo "---- THEMES ----"
             echo "1) Blueprint"
             echo "2) Nebula(blueprint)"
-            echo "3  Euphoria(blueprint)"
-            echo "4" Revix/Reviactyl(without blueprint)"
+            echo "3) Euphoria(blueprint)"
+            echo "4) Revix/Reviactyl(without blueprint)"
             echo "5) Apollo"
             read -rp "Choose theme: " t
             case $t in
