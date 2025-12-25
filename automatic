@@ -75,6 +75,19 @@ install_huxregister() {
     blueprint -install huxregister
 }
 
+install_loader() {
+    cd /var/www/pterodactyl || exit 1
+    wget -O loader.blueprint https://github.com/TS-25/SRJ-THEME/releases/latest/download/loader.blueprint
+    blueprint -install loader
+}
+
+install_announce() {
+    cd /var/www/pterodactyl || exit 1
+    wget -O announce.blueprint https://github.com/TS-25/SRJ-THEME/releases/latest/download/announce.blueprint
+    blueprint -install announce
+}
+
+
 while true; do
     echo ""
     echo "1) Install Themes"
@@ -86,9 +99,9 @@ while true; do
         1)
             echo "---- THEMES ----"
             echo "1) Blueprint"
-            echo "2) Nebula"
-            echo "3) Euphoria"
-            echo "4) Revix/Reviactyl"
+            echo "2) Nebula(blueprint)"
+            echo "3  Euphoria(blueprint)"
+            echo "4" Revix/Reviactyl(without blueprint)"
             echo "5) Apollo"
             read -rp "Choose theme: " t
             case $t in
@@ -100,13 +113,15 @@ while true; do
             esac
             ;;
         2)
-            echo "---- ADDONS ----"
+            echo "---- ADDONS(blueprint)----"
             echo "1) MC Plugins"
             echo "2) Subdomain"
             echo "3) Resource Manager"
             echo "4) Pull Files"
             echo "5) Player Manager"
             echo "6) HuxRegister"
+            echo "7) loader"
+            echo "8) announce"
             read -rp "Choose addon: " a
             case $a in
                 1) install_mcplugins ;;
@@ -115,6 +130,8 @@ while true; do
                 4) install_pull_files ;;
                 5) install_player_manager ;;
                 6) install_huxregister ;;
+                7) install_loader ;;
+                8) install_announce ;;
             esac
             ;;
         3) exit 0 ;;
