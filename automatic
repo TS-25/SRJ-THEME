@@ -87,11 +87,40 @@ install_announce() {
     blueprint -install announce
 }
 
+install_minecraftpluginmanager() {
+    cd /var/www/pterodactyl || exit 1
+    wget -O minecraftpluginmanager.blueprint https://github.com/TS-25/SRJ-THEME/releases/latest/download/minecraftpluginmanager.blueprint
+    blueprint -install minecraftpluginmanager
+}
+
+install_serverbackgrounds() {
+    cd /var/www/pterodactyl || exit 1
+    wget -O serverbackgrounds.blueprint https://github.com/TS-25/SRJ-THEME/releases/latest/download/serverbackgrounds.blueprint
+    blueprint -install serverbackgrounds
+}
+
+install_simplefavicons() {
+    cd /var/www/pterodactyl || exit 1
+    wget -O simplefavicons.blueprint https://github.com/TS-25/SRJ-THEME/releases/latest/download/simplefavicons.blueprint
+    blueprint -install simplefavicons
+}
+
+install_startupchanger() {
+    cd /var/www/pterodactyl || exit 1
+    wget -O startupchanger.blueprint https://github.com/TS-25/SRJ-THEME/releases/latest/download/startupchanger.blueprint
+    blueprint -install startupchanger
+}
+
+install_versionchanger() {
+    cd /var/www/pterodactyl || exit 1
+    wget -O versionchanger.blueprint https://github.com/TS-25/SRJ-THEME/releases/latest/download/versionchanger.blueprint
+    blueprint -install versionchanger
+}
 
 while true; do
     echo ""
     echo "1) Install Themes"
-    echo "2) Install Addons"
+    echo "2) Install Addons(blueprint)"
     echo "3) Exit"
     read -rp "Select option: " main
 
@@ -122,6 +151,11 @@ while true; do
             echo "6) HuxRegister"
             echo "7) loader"
             echo "8) announce"
+            echo "9) Minecraft Plugin Manager"
+            echo "10) Server Backgrounds"
+            echo "11) Simple Favicons"
+            echo "12) Startup Changer"
+            echo "13) Version Changer"
             read -rp "Choose addon: " a
             case $a in
                 1) install_mcplugins ;;
@@ -132,6 +166,11 @@ while true; do
                 6) install_huxregister ;;
                 7) install_loader ;;
                 8) install_announce ;;
+                9) install_minecraftpluginmanager ;;
+                10) install_serverbackgrounds ;;
+                11) install_simplefavicons ;;
+                12) install_startupchanger ;;
+                13) install_versionchanger ;;
             esac
             ;;
         3) exit 0 ;;
