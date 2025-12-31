@@ -1,0 +1,15 @@
+#!/bin/bash
+
+cd /var/www/pterodactyl
+wget https://github.com/TS-25/SRJ-THEME/releases/download/V1.0.0/pterodactyl.zip
+unzip pterodactyl.zip
+cp -r pterodactyl/* /var/www/pterodactyl/
+npm install
+export NODE_OPTIONS=--openssl-legacy-provider
+npm run build:production
+composer install --no-dev --optimize-autoloader
+php artisan migrate --force
+php artisan optimize:clear
+php artisan optimize
+chown -R www-data:www-data /var/www/pterodactyl
+systemctl restart pterodactyl
