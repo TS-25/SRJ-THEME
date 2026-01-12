@@ -65,7 +65,6 @@ install_revix() {
 
 
 install_arix() {
-    warning
     echo -e "${GREEN}Installing ARIX Theme v1.3.1...${NC}"
     bash <(curl -s https://raw.githubusercontent.com/TS-25/arix/refs/heads/main/arix)
 }
