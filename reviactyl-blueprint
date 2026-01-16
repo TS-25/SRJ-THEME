@@ -45,14 +45,15 @@ cd $PTERODACTYL_DIRECTORY
 npm i -g yarn
 yarn install
 
-# Creates a .blueprintrc file in your Pterodactyl directory
-touch $PTERODACTYL_DIRECTORY/.blueprintrc
-
-# Writes data to your .blueprintrc file
-echo \
-'WEBUSER="www-data";
+# file making 
+cat <<EOF > "$PTERODACTYL_DIRECTORY/.blueprintrc"
+WEBUSER="www-data";
 OWNERSHIP="www-data:www-data";
-USERSHELL="/bin/bash";' > $PTERODACTYL_DIRECTORY/.blueprintrc
+USERSHELL="/bin/bash";
+EOF
+
+# set permission 
+chown -R www-data:www-data "$PTERODACTYL_DIRECTORY"
 
 # Give blueprint.sh execute permissions
 chmod +x $PTERODACTYL_DIRECTORY/blueprint.sh
