@@ -1,8 +1,0 @@
-#!/bin/bash
-
-apt install wget -y
-cd /var/www/pterodactyl || { echo "❌ Pterodactyl not found!"; exit 1; }
-wget -O apolloInstallerAmd64 https://github.com/TS-25/SRJ-THEME/releases/latest/download/apolloInstallerAmd64
-sudo chmod +x apolloInstallerAmd64
-./apolloInstallerAmd64
-echo "✅ Apollo theme installed!"
