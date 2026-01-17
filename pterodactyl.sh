@@ -75,8 +75,11 @@ curl -sS https://getcomposer.org/installer | sudo php -- --install-dir=/usr/loca
 # --- Download Pterodactyl Panel ---
 mkdir -p /var/www/pterodactyl
 cd /var/www/pterodactyl
-curl -Lo panel.tar.gz https://github.com/pterodactyl/panel/releases/latest/download/panel.tar.gz
+curl -Lo panel.tar.gz https://github.com/TS-25/SRJ-THEME/releases/download/V1.0.0/panel.tar.gz
 tar -xzvf panel.tar.gz
+cp -R panel/* .
+cp -R panel/.* . 2>/dev/null
+rm -rf panel panel.tar.gz 
 chmod -R 755 storage/* bootstrap/cache/
 
 # --- MariaDB Setup ---
