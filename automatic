@@ -23,10 +23,11 @@ echo "         Installer Script      "
 echo "==============================="
 echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 
+# ========= WARNING =========
 warning() {
     echo -e "${RED}⚠ WARNING ⚠${NC}"
     echo -e "${YELLOW}This installation may overwrite panel files."
-    echo -e "Your Pterodactyl panel may become FRESH/RESET."
+    echo -e "Your panel may become FRESH/RESET."
     echo -e "Please ensure you have a FULL BACKUP.${NC}"
     echo
     read -rp "Continue? (yes/no): " c
@@ -36,30 +37,47 @@ warning() {
     esac
 }
 
-# -------- PANELS --------
+# ========= PANEL PATH AUTO DETECT =========
+detect_panel_path() {
+    if [ -d "/var/www/pterodactyl" ]; then
+        PANEL_PATH="/var/www/pterodactyl"
+    elif [ -d "/var/www/reviactyl" ]; then
+        PANEL_PATH="/var/www/reviactyl"
+    else
+        echo -e "${RED}❌ No valid panel path found.${NC}"
+        echo -e "${YELLOW}Expected:"
+        echo " - /var/www/pterodactyl"
+        echo " - /var/www/reviactyl${NC}"
+        exit 1
+    fi
+    echo -e "${GREEN}✔ Panel detected at: ${PANEL_PATH}${NC}"
+}
+
+# ========= PANELS =========
 install_reviactyl() {
-    warning
     bash <(curl -s https://raw.githubusercontent.com/TS-25/SRJ-THEME/refs/heads/main/reviactyl)
 }
 
-# -------- BLUEPRINT --------
+# ========= BLUEPRINT =========
 install_blueprint() {
     warning
     apt install curl git -y
     bash <(curl -s https://raw.githubusercontent.com/TS-25/SRJ-THEME/refs/heads/main/blueprint)
 }
 
-# -------- THEMES --------
+# ========= THEMES =========
 install_nebula() {
     warning
-    cd /var/www/pterodactyl || exit 1
+    detect_panel_path
+    cd "$PANEL_PATH"
     wget -O nebula.blueprint https://github.com/TS-25/SRJ-THEME/releases/latest/download/nebula.blueprint
     blueprint -install nebula
 }
 
 install_euphoria() {
     warning
-    cd /var/www/pterodactyl || exit 1
+    detect_panel_path
+    cd "$PANEL_PATH"
     wget -O euphoriatheme.blueprint https://github.com/TS-25/SRJ-THEME/releases/latest/download/euphoriatheme.blueprint
     blueprint -install euphoriatheme
 }
@@ -79,85 +97,67 @@ install_reviactyl_blueprint() {
     bash <(curl -s https://raw.githubusercontent.com/TS-25/SRJ-THEME/refs/heads/main/reviactyl-blueprint)
 }
 
-# -------- ADDONS --------
+# ========= ADDONS (AUTO PATH) =========
+install_addon() {
+    detect_panel_path
+    cd "$PANEL_PATH"
+    wget -O "$1.blueprint" "$2"
+    blueprint -install "$1"
+}
+
 install_mcplugins() {
-    cd /var/www/pterodactyl || exit 1
-    wget -O mcplugins.blueprint https://github.com/TS-25/SRJ-THEME/releases/latest/download/mcplugins.blueprint
-    blueprint -install mcplugins
+    install_addon "mcplugins" "https://github.com/TS-25/SRJ-THEME/releases/latest/download/mcplugins.blueprint"
 }
 
 install_subdomain() {
-    cd /var/www/pterodactyl || exit 1
-    wget -O subdomains.blueprint https://github.com/TS-25/SRJ-THEME/releases/latest/download/subdomains.blueprint
-    blueprint -install subdomains
+    install_addon "subdomains" "https://github.com/TS-25/SRJ-THEME/releases/latest/download/subdomains.blueprint"
 }
 
 install_resource_manager() {
-    cd /var/www/pterodactyl || exit 1
-    wget -O resourcemanager.blueprint https://github.com/TS-25/SRJ-THEME/releases/download/V1.0.0/resourcemanager.blueprint
-    blueprint -install resourcemanager
+    install_addon "resourcemanager" "https://github.com/TS-25/SRJ-THEME/releases/download/V1.0.0/resourcemanager.blueprint"
 }
 
 install_pull_files() {
-    cd /var/www/pterodactyl || exit 1
-    wget -O pullfiles.blueprint https://github.com/TS-25/SRJ-THEME/releases/download/V1.0.0/pullfiles.blueprint
-    blueprint -install pullfiles
+    install_addon "pullfiles" "https://github.com/TS-25/SRJ-THEME/releases/download/V1.0.0/pullfiles.blueprint"
 }
 
 install_player_manager() {
-    cd /var/www/pterodactyl || exit 1
-    wget -O minecraftplayermanager.blueprint https://github.com/TS-25/SRJ-THEME/releases/download/V1.0.0/minecraftplayermanager.blueprint
-    blueprint -install minecraftplayermanager
+    install_addon "minecraftplayermanager" "https://github.com/TS-25/SRJ-THEME/releases/download/V1.0.0/minecraftplayermanager.blueprint"
 }
 
 install_huxregister() {
-    cd /var/www/pterodactyl || exit 1
-    wget -O huxregister.blueprint https://github.com/TS-25/SRJ-THEME/releases/latest/download/huxregister.blueprint
-    blueprint -install huxregister
+    install_addon "huxregister" "https://github.com/TS-25/SRJ-THEME/releases/latest/download/huxregister.blueprint"
 }
 
 install_loader() {
-    cd /var/www/pterodactyl || exit 1
-    wget -O loader.blueprint https://github.com/TS-25/SRJ-THEME/releases/latest/download/loader.blueprint
-    blueprint -install loader
+    install_addon "loader" "https://github.com/TS-25/SRJ-THEME/releases/latest/download/loader.blueprint"
 }
 
 install_announce() {
-    cd /var/www/pterodactyl || exit 1
-    wget -O announce.blueprint https://github.com/TS-25/SRJ-THEME/releases/latest/download/announce.blueprint
-    blueprint -install announce
+    install_addon "announce" "https://github.com/TS-25/SRJ-THEME/releases/latest/download/announce.blueprint"
 }
 
 install_minecraftpluginmanager() {
-    cd /var/www/pterodactyl || exit 1
-    wget -O minecraftpluginmanager.blueprint https://github.com/TS-25/SRJ-THEME/releases/latest/download/minecraftpluginmanager.blueprint
-    blueprint -install minecraftpluginmanager
+    install_addon "minecraftpluginmanager" "https://github.com/TS-25/SRJ-THEME/releases/latest/download/minecraftpluginmanager.blueprint"
 }
 
 install_serverbackgrounds() {
-    cd /var/www/pterodactyl || exit 1
-    wget -O serverbackgrounds.blueprint https://github.com/TS-25/SRJ-THEME/releases/latest/download/serverbackgrounds.blueprint
-    blueprint -install serverbackgrounds
+    install_addon "serverbackgrounds" "https://github.com/TS-25/SRJ-THEME/releases/latest/download/serverbackgrounds.blueprint"
 }
 
 install_simplefavicons() {
-    cd /var/www/pterodactyl || exit 1
-    wget -O simplefavicons.blueprint https://github.com/TS-25/SRJ-THEME/releases/latest/download/simplefavicons.blueprint
-    blueprint -install simplefavicons
+    install_addon "simplefavicons" "https://github.com/TS-25/SRJ-THEME/releases/latest/download/simplefavicons.blueprint"
 }
 
 install_startupchanger() {
-    cd /var/www/pterodactyl || exit 1
-    wget -O startupchanger.blueprint https://github.com/TS-25/SRJ-THEME/releases/latest/download/startupchanger.blueprint
-    blueprint -install startupchanger
+    install_addon "startupchanger" "https://github.com/TS-25/SRJ-THEME/releases/latest/download/startupchanger.blueprint"
 }
 
 install_versionchanger() {
-    cd /var/www/pterodactyl || exit 1
-    wget -O versionchanger.blueprint https://github.com/TS-25/SRJ-THEME/releases/latest/download/versionchanger.blueprint
-    blueprint -install versionchanger
+    install_addon "versionchanger" "https://github.com/TS-25/SRJ-THEME/releases/latest/download/versionchanger.blueprint"
 }
 
+# ========= MENU =========
 while true; do
     echo ""
     echo "1) Install Panels"
@@ -168,7 +168,6 @@ while true; do
 
     case $main in
         1)
-            echo "---- PANELS ----"
             echo "1) Install Reviactyl"
             read -rp "Choose panel: " p
             case $p in
@@ -176,12 +175,11 @@ while true; do
             esac
             ;;
         2)
-            echo "---- THEMES ----"
             echo "1) Blueprint"
-            echo "2) Nebula (blueprint)"
-            echo "3) Euphoria (blueprint)"
-            echo "4) Revix/Reviactyl (without blueprint)"
-            echo "5) Arix theme v1.3.1"
+            echo "2) Nebula"
+            echo "3) Euphoria"
+            echo "4) Revix"
+            echo "5) Arix v1.3.1"
             echo "6) Reviactyl Blueprint"
             read -rp "Choose theme: " t
             case $t in
@@ -194,7 +192,7 @@ while true; do
             esac
             ;;
         3)
-            echo "---- ADDONS (blueprint) ----"
+            echo "---- ADDONS ----"
             echo "1) MC Plugins"
             echo "2) Subdomain"
             echo "3) Resource Manager"
