@@ -35,7 +35,6 @@ EOF
 echo -e "${C_RESET}"
 line
 echo -e "${C_GREEN}⚡ Fast • Stable • Production Ready${C_RESET}"
-echo -e "${C_PURPLE}🧠 The Coding Hub — 2026 Installer${C_RESET}"
 line
 }
 
@@ -112,8 +111,33 @@ COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --optimize-autoloader
 echo "✅ Generating application key..."
 php artisan key:generate --force
 
-# --- Run Migrations ---
+
+echo -e "▶ Installing Node.js 22..."
+curl -sL https://deb.nodesource.com/setup_22.x | sudo -E bash -
+apt-get install -y nodejs
+
+echo -e "▶ Installing Yarn..."
+npm install -g yarn
+
+echo -e "▶ Installing frontend dependencies..."
+yarn install
+yarn add react-paypal-checkout-button @paypal/paypal-js
+
+export NODE_OPTIONS=--openssl-legacy-provider
+
+echo -e "▶ Building production assets..."
+yarn run build:production
+
+echo -e "▶ Running database migrations..."
 php artisan migrate --seed --force
+
+echo -e "▶ Clearing and optimizing cache..."
+php artisan optimize:clear
+
+echo -e "▶ Setting permissions..."
+chown -R www-data:www-data /var/www/pterodactyl/*
+chmod -R 755 storage
+
 
 # --- Permissions ---
 chown -R www-data:www-data /var/www/pterodactyl/*
