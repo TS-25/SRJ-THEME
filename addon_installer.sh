@@ -104,6 +104,57 @@ install_versionchanger() {
     install_addon "versionchanger" "https://github.com/TS-25/SRJ-THEME/releases/latest/download/versionchanger.blueprint"
 }
 
+# ========= NEW ADDONS =========
+install_mclogs() {
+    warning_prompt
+    install_addon "mclogs" "https://github.com/TS-25/SRJ-THEME/releases/latest/download/mclogs.blueprint"
+}
+
+install_bluetables() {
+    warning_prompt
+    install_addon "bluetables" "https://github.com/TS-25/SRJ-THEME/releases/latest/download/bluetables.blueprint"
+}
+
+install_mctools() {
+    warning_prompt
+    install_addon "mctools" "https://github.com/TS-25/SRJ-THEME/releases/latest/download/mctools.blueprint"
+}
+
+install_simplefooters() {
+    warning_prompt
+    install_addon "simplefooters" "https://github.com/TS-25/SRJ-THEME/releases/latest/download/simplefooters.blueprint"
+}
+
+install_votifiertester() {
+    warning_prompt
+    print_info "Installing Votifier Tester..."
+    
+    if ! detect_panel_path; then
+        return 1
+    fi
+    
+    cd "$PANEL_PATH" || return 1
+    
+    # Download the blueprint file
+    if safe_download "https://github.com/TS-25/SRJ-THEME/releases/latest/download/votifiertester.blueprint" "votifiertester.blueprint"; then
+        if command -v blueprint &>/dev/null; then
+            # Install required PHP dependency first
+            print_info "Installing Votifier PHP client..."
+            composer require leonardorrc/votifier-client-php
+            
+            # Install the blueprint
+            blueprint -install votifiertester
+            print_success "Votifier Tester installed successfully"
+        else
+            print_error "Blueprint not found. Install it first from theme menu."
+            return 1
+        fi
+    else
+        print_error "Failed to download Votifier Tester"
+        return 1
+    fi
+}
+
 # ========= ADDON MANAGEMENT FUNCTIONS =========
 list_installed_addons() {
     if detect_panel_path; then
@@ -134,24 +185,29 @@ show_addon_menu() {
     echo "2) Player Manager"
     echo "3) Minecraft Plugin Manager"
     echo "4) Version Changer"
+    echo "5) MC Logs"
+    echo "6) MC Tools"
+    echo "7) Votifier Tester"
     
     echo -e "\n---- Server Management ----"
-    echo "5) Resource Manager"
-    echo "6) Pull Files"
-    echo "7) Startup Changer"
-    echo "8) Server Backgrounds"
+    echo "8) Resource Manager"
+    echo "9) Pull Files"
+    echo "10) Startup Changer"
+    echo "11) Server Backgrounds"
     
     echo -e "\n---- Features ----"
-    echo "9) Subdomain"
-    echo "10) HuxRegister"
-    echo "11) Loader"
-    echo "12) Announce"
-    echo "13) Simple Favicons"
+    echo "12) Subdomain"
+    echo "13) HuxRegister"
+    echo "14) Loader"
+    echo "15) Announce"
+    echo "16) Simple Favicons"
+    echo "17) Simple Footers"
+    echo "18) Blue Tables"
     
     echo -e "\n---- Management ----"
-    echo "14) List Installed Addons"
-    echo "15) Remove Addon"
-    echo "16) Back to Main Menu"
+    echo "19) List Installed Addons"
+    echo "20) Remove Addon"
+    echo "21) Back to Main Menu"
     echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 }
 
@@ -164,21 +220,26 @@ handle_addon_choice() {
         2) install_player_manager ;;
         3) install_minecraftpluginmanager ;;
         4) install_versionchanger ;;
-        5) install_resource_manager ;;
-        6) install_pull_files ;;
-        7) install_startupchanger ;;
-        8) install_serverbackgrounds ;;
-        9) install_subdomain ;;
-        10) install_huxregister ;;
-        11) install_loader ;;
-        12) install_announce ;;
-        13) install_simplefavicons ;;
-        14) list_installed_addons ;;
-        15)
+        5) install_mclogs ;;
+        6) install_mctools ;;
+        7) install_votifiertester ;;
+        8) install_resource_manager ;;
+        9) install_pull_files ;;
+        10) install_startupchanger ;;
+        11) install_serverbackgrounds ;;
+        12) install_subdomain ;;
+        13) install_huxregister ;;
+        14) install_loader ;;
+        15) install_announce ;;
+        16) install_simplefavicons ;;
+        17) install_simplefooters ;;
+        18) install_bluetables ;;
+        19) list_installed_addons ;;
+        20)
             read -rp "Enter addon name to remove: " addon_name
             remove_addon "$addon_name"
             ;;
-        16) return 1 ;;
+        21) return 1 ;;
         *) 
             print_error "Invalid option"
             sleep 1
@@ -193,4 +254,5 @@ export -f install_mcplugins install_subdomain install_resource_manager install_p
 export -f install_player_manager install_huxregister install_loader install_announce
 export -f install_minecraftpluginmanager install_serverbackgrounds install_simplefavicons
 export -f install_startupchanger install_versionchanger
+export -f install_mclogs install_bluetables install_mctools install_simplefooters install_votifiertester
 export -f show_addon_menu handle_addon_choice
