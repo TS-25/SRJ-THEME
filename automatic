@@ -1,6 +1,6 @@
 #!/bin/bash
 # ============= MAIN INSTALLER SCRIPT =============
-# This is the main entry point for the installer
+# Premium Installer with License Validation
 # =================================================
 
 # Check if running as root
@@ -9,6 +9,181 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
+# ========= LICENSE VALIDATION =========
+validate_license() {
+    echo "========================================"
+    echo "    PREMIUM INSTALLER - LICENSE CHECK   "
+    echo "========================================"
+    echo ""
+    
+    # Configuration
+    LICENSE_SERVER="http://localhost:5000/api"
+    CACHE_DIR="/etc/panel_installer"
+    LICENSE_CACHE="$CACHE_DIR/license.cache"
+    HWID_FILE="$CACHE_DIR/hwid"
+    
+    # Create cache directory
+    mkdir -p "$CACHE_DIR"
+    chmod 700 "$CACHE_DIR"
+    
+    # Generate HWID
+    generate_hwid() {
+        if [ -f "$HWID_FILE" ]; then
+            cat "$HWID_FILE"
+            return
+        fi
+        
+        local hwid_parts=""
+        
+        # Collect system information
+        if [ -f "/etc/machine-id" ]; then
+            hwid_parts="${hwid_parts}$(cat /etc/machine-id 2>/dev/null || echo "NOMACHINEID")"
+        fi
+        
+        if [ -f "/proc/cpuinfo" ]; then
+            cpu_id=$(grep -m1 "serial" /proc/cpuinfo 2>/dev/null | awk '{print $3}')
+            if [ -n "$cpu_id" ]; then
+                hwid_parts="${hwid_parts}${cpu_id}"
+            else
+                cpu_model=$(grep -m1 "model name" /proc/cpuinfo 2>/dev/null | md5sum | cut -c1-16)
+                hwid_parts="${hwid_parts}${cpu_model}"
+            fi
+        fi
+        
+        mac_address=$(ip link show 2>/dev/null | awk '/ether/ {print $2; exit}' | tr -d ':')
+        if [ -n "$mac_address" ]; then
+            hwid_parts="${hwid_parts}${mac_address}"
+        fi
+        
+        if [ -z "$hwid_parts" ]; then
+            hwid_parts=$(date +%s%N | sha256sum | head -c 32)
+        fi
+        
+        HWID=$(echo -n "$hwid_parts" | sha256sum | awk '{print $1}')
+        echo "$HWID" > "$HWID_FILE"
+        chmod 600 "$HWID_FILE"
+        echo "$HWID"
+    }
+    
+    # Check cached license first
+    check_cached_license() {
+        if [ -f "$LICENSE_CACHE" ]; then
+            local cached_key=$(grep -o '"license_key":"[^"]*"' "$LICENSE_CACHE" 2>/dev/null | cut -d'"' -f4)
+            local cached_hwid=$(grep -o '"hwid":"[^"]*"' "$LICENSE_CACHE" 2>/dev/null | cut -d'"' -f4)
+            local current_hwid=$(generate_hwid)
+            
+            if [ "$cached_key" = "$license_key" ] && [ "$cached_hwid" = "$current_hwid" ]; then
+                local validated_at=$(grep -o '"validated_at":[0-9]*' "$LICENSE_CACHE" | cut -d: -f2)
+                local current_time=$(date +%s)
+                local cache_age=$((current_time - validated_at))
+                local max_offline_age=604800  # 7 days
+                
+                if [ $cache_age -lt $max_offline_age ]; then
+                    echo "✓ License verified from cache"
+                    return 0
+                fi
+            fi
+        fi
+        return 1
+    }
+    
+    # Validate with server
+    validate_with_server() {
+        local license_key="$1"
+        local hwid=$(generate_hwid)
+        local machine_name=$(hostname)
+        
+        echo "Validating license..."
+        
+        local response=$(curl -s -X POST "$LICENSE_SERVER/validate" \
+            -H "Content-Type: application/json" \
+            -d "{\"license_key\":\"$license_key\",\"hwid\":\"$hwid\",\"machine_name\":\"$machine_name\"}" \
+            --max-time 10 2>/dev/null)
+        
+        if [ $? -eq 0 ]; then
+            local valid=$(echo "$response" | grep -o '"valid":[^,]*' | cut -d: -f2 | tr -d ' ')
+            if [ "$valid" = "true" ]; then
+                # Cache the successful validation
+                cat > "$LICENSE_CACHE" << EOF
+{
+    "license_key": "$license_key",
+    "hwid": "$hwid",
+    "validated_at": $(date +%s)
+}
+EOF
+                chmod 600 "$LICENSE_CACHE"
+                echo "✓ License validated successfully!"
+                return 0
+            else
+                local message=$(echo "$response" | grep -o '"message":"[^"]*"' | cut -d'"' -f4)
+                echo "✗ License invalid: ${message:-Unknown error}"
+                return 1
+            fi
+        else
+            echo "✗ Cannot connect to license server"
+            return 1
+        fi
+    }
+    
+    # Check if already validated
+    if [ -f "$LICENSE_CACHE" ]; then
+        local cached_key=$(grep -o '"license_key":"[^"]*"' "$LICENSE_CACHE" 2>/dev/null | cut -d'"' -f4)
+        if [ -n "$cached_key" ] && check_cached_license "$cached_key"; then
+            return 0
+        fi
+    fi
+    
+    # Show license prompt
+    echo "This installer requires a valid license key."
+    echo "Please enter your license key below."
+    echo ""
+    echo "Format: XXXX-XXXX-XXXX-XXXX"
+    echo ""
+    
+    local attempts=0
+    local max_attempts=3
+    
+    while [ $attempts -lt $max_attempts ]; do
+        read -rp "License Key: " license_key
+        
+        # Clean input
+        license_key=$(echo "$license_key" | tr '[:lower:]' '[:upper:]' | tr -d '[:space:]')
+        
+        # Check if user wants to exit
+        if [ "$license_key" = "EXIT" ] || [ "$license_key" = "QUIT" ]; then
+            echo "Installation cancelled"
+            exit 1
+        fi
+        
+        # Validate format
+        if ! echo "$license_key" | grep -qE '^[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$'; then
+            echo "✗ Invalid format. Expected: XXXX-XXXX-XXXX-XXXX"
+            attempts=$((attempts + 1))
+            echo ""
+            continue
+        fi
+        
+        # Validate license
+        if validate_with_server "$license_key"; then
+            echo ""
+            return 0
+        else
+            attempts=$((attempts + 1))
+            if [ $attempts -lt $max_attempts ]; then
+                echo "Please try again ($((max_attempts - attempts)) attempts remaining)"
+                echo ""
+            fi
+        fi
+    done
+    
+    echo "✗ Maximum attempts reached. Exiting."
+    exit 1
+}
+
+# ========= RUN LICENSE VALIDATION =========
+validate_license
+
+# ========= CONTINUE WITH NORMAL INSTALLER =========
 # Define module directory
 MODULE_DIR="/tmp/panel_installer_modules"
 
@@ -32,17 +207,86 @@ download_module() {
     fi
 }
 
-# Download required modules
-download_module "core_setup"
-download_module "panel_installer"
-download_module "theme_installer"
-download_module "addon_installer"
+# Colors for output
+RED='\033[1;31m'
+GREEN='\033[1;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[1;34m'
+CYAN='\033[1;36m'
+NC='\033[0m'
 
-# Load all modules
-source "$MODULE_DIR/core_setup.sh"
-source "$MODULE_DIR/panel_installer.sh"
-source "$MODULE_DIR/theme_installer.sh"
-source "$MODULE_DIR/addon_installer.sh"
+# Simple logging functions (will be overridden by core_setup)
+print_success() { echo -e "${GREEN}✓${NC} $1"; }
+print_error() { echo -e "${RED}✗${NC} $1"; }
+print_warning() { echo -e "${YELLOW}⚠${NC} $1"; }
+print_info() { echo -e "${BLUE}ℹ${NC} $1"; }
+
+# Simple display header (will be overridden by core_setup)
+display_header() {
+    clear
+    echo -e "${CYAN}"
+    echo "╔══════════════════════════════════════╗"
+    echo "║      PREMIUM PANEL INSTALLER         ║"
+    echo "║         License Verified ✓           ║"
+    echo "╚══════════════════════════════════════╝${NC}"
+    echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+}
+
+# Simple main menu (will be overridden by loaded modules)
+show_main_menu() {
+    echo "Main Menu:"
+    echo "1) Install Panels"
+    echo "2) Install Themes"
+    echo "3) Install Addons"
+    echo "4) System Information"
+    echo "5) Exit"
+    echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+}
+
+# Download required modules
+echo ""
+print_info "Downloading installer modules..."
+
+if download_module "core_setup" && \
+   download_module "panel_installer" && \
+   download_module "theme_installer" && \
+   download_module "addon_installer"; then
+    
+    # Load all modules
+    if source "$MODULE_DIR/core_setup.sh" 2>/dev/null; then
+        print_success "Core module loaded"
+    else
+        print_error "Failed to load core module"
+        exit 1
+    fi
+    
+    if source "$MODULE_DIR/panel_installer.sh" 2>/dev/null; then
+        print_success "Panel module loaded"
+    else
+        print_warning "Panel module failed to load"
+    fi
+    
+    if source "$MODULE_DIR/theme_installer.sh" 2>/dev/null; then
+        print_success "Theme module loaded"
+    else
+        print_warning "Theme module failed to load"
+    fi
+    
+    if source "$MODULE_DIR/addon_installer.sh" 2>/dev/null; then
+        print_success "Addon module loaded"
+    else
+        print_warning "Addon module failed to load"
+    fi
+    
+    print_success "All modules loaded successfully!"
+    echo ""
+    
+else
+    print_error "Failed to download required modules"
+    echo "Please check your internet connection and try again."
+    exit 1
+fi
 
 # ========= MAIN LOOP =========
 while true; do
@@ -52,47 +296,99 @@ while true; do
     
     case $main_choice in
         1)  # Panels
-            while true; do
-                display_header
-                show_panel_menu
-                if ! handle_panel_choice; then
-                    break
-                fi
-                echo -e "\n${YELLOW}Press Enter to continue...${NC}"
-                read -r
-            done
+            if type show_panel_menu &>/dev/null && type handle_panel_choice &>/dev/null; then
+                while true; do
+                    display_header
+                    show_panel_menu
+                    if ! handle_panel_choice; then
+                        break
+                    fi
+                    echo -e "\n${YELLOW}Press Enter to continue...${NC}"
+                    read -r
+                done
+            else
+                print_error "Panel installer module not available"
+                sleep 2
+            fi
             ;;
         2)  # Themes
-            while true; do
-                display_header
-                show_theme_menu
-                if ! handle_theme_choice; then
-                    break
-                fi
-                echo -e "\n${YELLOW}Press Enter to continue...${NC}"
-                read -r
-            done
+            if type show_theme_menu &>/dev/null && type handle_theme_choice &>/dev/null; then
+                while true; do
+                    display_header
+                    show_theme_menu
+                    if ! handle_theme_choice; then
+                        break
+                    fi
+                    echo -e "\n${YELLOW}Press Enter to continue...${NC}"
+                    read -r
+                done
+            else
+                print_error "Theme installer module not available"
+                sleep 2
+            fi
             ;;
         3)  # Addons
-            while true; do
-                display_header
-                show_addon_menu
-                if ! handle_addon_choice; then
-                    break
-                fi
-                echo -e "\n${YELLOW}Press Enter to continue...${NC}"
-                read -r
-            done
+            if type show_addon_menu &>/dev/null && type handle_addon_choice &>/dev/null; then
+                while true; do
+                    display_header
+                    show_addon_menu
+                    if ! handle_addon_choice; then
+                        break
+                    fi
+                    echo -e "\n${YELLOW}Press Enter to continue...${NC}"
+                    read -r
+                done
+            else
+                print_error "Addon installer module not available"
+                sleep 2
+            fi
             ;;
         4)  # System Info
             display_header
             echo -e "${CYAN}=== SYSTEM INFORMATION ===${NC}"
-            echo "Panel Path: ${PANEL_PATH:-Not detected}"
+            
+            # Detect panel
+            PANEL_PATH=""
+            if [ -d "/var/www/pterodactyl" ]; then
+                PANEL_PATH="/var/www/pterodactyl"
+                PANEL_TYPE="Pterodactyl"
+            elif [ -d "/var/www/reviactyl" ]; then
+                PANEL_PATH="/var/www/reviactyl"
+                PANEL_TYPE="Reviactyl"
+            elif [ -d "/var/www/panel" ]; then
+                PANEL_PATH="/var/www/panel"
+                PANEL_TYPE="Generic"
+            fi
+            
+            echo "Panel Type: ${PANEL_TYPE:-Not detected}"
+            echo "Panel Path: ${PANEL_PATH:-Not found}"
             echo "Blueprint: $(command -v blueprint >/dev/null && echo "Installed" || echo "Not installed")"
-            echo -e "${YELLOW}Press Enter to continue...${NC}"
+            echo "System: $(uname -s -r)"
+            echo "Hostname: $(hostname)"
+            
+            # License info
+            LICENSE_CACHE="/etc/panel_installer/license.cache"
+            if [ -f "$LICENSE_CACHE" ]; then
+                echo -e "\n${CYAN}=== LICENSE INFORMATION ===${NC}"
+                cached_key=$(grep -o '"license_key":"[^"]*"' "$LICENSE_CACHE" 2>/dev/null | cut -d'"' -f4)
+                if [ -n "$cached_key" ]; then
+                    echo "License: ${cached_key:0:8}...${cached_key: -4}"
+                    
+                    validated_at=$(grep -o '"validated_at":[0-9]*' "$LICENSE_CACHE" | cut -d: -f2)
+                    if [ -n "$validated_at" ]; then
+                        validated_date=$(date -d "@$validated_at" "+%Y-%m-%d %H:%M:%S" 2>/dev/null || echo "Unknown")
+                        echo "Last Validated: $validated_date"
+                    fi
+                fi
+            fi
+            
+            echo -e "\n${YELLOW}Press Enter to continue...${NC}"
             read -r
             ;;
         5)  # Exit
+            display_header
+            echo "Thank you for using Premium Panel Installer!"
+            echo ""
             print_success "Goodbye!"
             exit 0
             ;;
