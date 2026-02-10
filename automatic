@@ -9,131 +9,47 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
+# ========= CONFIGURATION =========
+LICENSE_SERVER="https://ghcptz-5000.csb.app/api"
+CACHE_DIR="/etc/panel_installer"
+LICENSE_CACHE="$CACHE_DIR/license.cache"
+VALIDATION_FLAG="$CACHE_DIR/.validated"
+HWID_FILE="$CACHE_DIR/hwid"
+
 # ========= LICENSE VALIDATION =========
 validate_license() {
-    echo "========================================"
-    echo "    PREMIUM INSTALLER - LICENSE CHECK   "
-    echo "========================================"
-    echo ""
+    # Check if already validated in this session
+    if [ -f "$VALIDATION_FLAG" ]; then
+        return 0
+    fi
     
-    # Configuration
-    LICENSE_SERVER="https://ghcptz-5000.csb.app/api"
-    CACHE_DIR="/etc/panel_installer"
-    LICENSE_CACHE="$CACHE_DIR/license.cache"
-    HWID_FILE="$CACHE_DIR/hwid"
-    
-    # Create cache directory
-    mkdir -p "$CACHE_DIR"
-    chmod 700 "$CACHE_DIR"
-    
-    # Generate HWID
-    generate_hwid() {
-        if [ -f "$HWID_FILE" ]; then
-            cat "$HWID_FILE"
-            return
-        fi
-        
-        local hwid_parts=""
-        
-        # Collect system information
-        if [ -f "/etc/machine-id" ]; then
-            hwid_parts="${hwid_parts}$(cat /etc/machine-id 2>/dev/null || echo "NOMACHINEID")"
-        fi
-        
-        if [ -f "/proc/cpuinfo" ]; then
-            cpu_id=$(grep -m1 "serial" /proc/cpuinfo 2>/dev/null | awk '{print $3}')
-            if [ -n "$cpu_id" ]; then
-                hwid_parts="${hwid_parts}${cpu_id}"
-            else
-                cpu_model=$(grep -m1 "model name" /proc/cpuinfo 2>/dev/null | md5sum | cut -c1-16)
-                hwid_parts="${hwid_parts}${cpu_model}"
-            fi
-        fi
-        
-        mac_address=$(ip link show 2>/dev/null | awk '/ether/ {print $2; exit}' | tr -d ':')
-        if [ -n "$mac_address" ]; then
-            hwid_parts="${hwid_parts}${mac_address}"
-        fi
-        
-        if [ -z "$hwid_parts" ]; then
-            hwid_parts=$(date +%s%N | sha256sum | head -c 32)
-        fi
-        
-        HWID=$(echo -n "$hwid_parts" | sha256sum | awk '{print $1}')
-        echo "$HWID" > "$HWID_FILE"
-        chmod 600 "$HWID_FILE"
-        echo "$HWID"
-    }
-    
-    # Check cached license first
-    check_cached_license() {
-        if [ -f "$LICENSE_CACHE" ]; then
-            local cached_key=$(grep -o '"license_key":"[^"]*"' "$LICENSE_CACHE" 2>/dev/null | cut -d'"' -f4)
-            local cached_hwid=$(grep -o '"hwid":"[^"]*"' "$LICENSE_CACHE" 2>/dev/null | cut -d'"' -f4)
-            local current_hwid=$(generate_hwid)
-            
-            if [ "$cached_key" = "$license_key" ] && [ "$cached_hwid" = "$current_hwid" ]; then
-                local validated_at=$(grep -o '"validated_at":[0-9]*' "$LICENSE_CACHE" | cut -d: -f2)
-                local current_time=$(date +%s)
-                local cache_age=$((current_time - validated_at))
-                local max_offline_age=604800  # 7 days
-                
-                if [ $cache_age -lt $max_offline_age ]; then
-                    echo "✓ License verified from cache"
-                    return 0
-                fi
-            fi
-        fi
-        return 1
-    }
-    
-    # Validate with server
-    validate_with_server() {
-        local license_key="$1"
-        local hwid=$(generate_hwid)
-        local machine_name=$(hostname)
-        
-        echo "Validating license..."
-        
-        local response=$(curl -s -X POST "$LICENSE_SERVER/validate" \
-            -H "Content-Type: application/json" \
-            -d "{\"license_key\":\"$license_key\",\"hwid\":\"$hwid\",\"machine_name\":\"$machine_name\"}" \
-            --max-time 10 2>/dev/null)
-        
-        if [ $? -eq 0 ]; then
-            local valid=$(echo "$response" | grep -o '"valid":[^,]*' | cut -d: -f2 | tr -d ' ')
-            if [ "$valid" = "true" ]; then
-                # Cache the successful validation
-                cat > "$LICENSE_CACHE" << EOF
-{
-    "license_key": "$license_key",
-    "hwid": "$hwid",
-    "validated_at": $(date +%s)
-}
-EOF
-                chmod 600 "$LICENSE_CACHE"
-                echo "✓ License validated successfully!"
-                return 0
-            else
-                local message=$(echo "$response" | grep -o '"message":"[^"]*"' | cut -d'"' -f4)
-                echo "✗ License invalid: ${message:-Unknown error}"
-                return 1
-            fi
-        else
-            echo "✗ Cannot connect to license server"
-            return 1
-        fi
-    }
-    
-    # Check if already validated
+    # Check for cached validation
     if [ -f "$LICENSE_CACHE" ]; then
         local cached_key=$(grep -o '"license_key":"[^"]*"' "$LICENSE_CACHE" 2>/dev/null | cut -d'"' -f4)
-        if [ -n "$cached_key" ] && check_cached_license "$cached_key"; then
-            return 0
+        local cached_hwid=$(grep -o '"hwid":"[^"]*"' "$LICENSE_CACHE" 2>/dev/null | cut -d'"' -f4)
+        local current_hwid=$(generate_hwid)
+        
+        if [ -n "$cached_key" ] && [ "$cached_hwid" = "$current_hwid" ]; then
+            local validated_at=$(grep -o '"validated_at":[0-9]*' "$LICENSE_CACHE" | cut -d: -f2)
+            local current_time=$(date +%s)
+            local cache_age=$((current_time - validated_at))
+            local max_offline_age=604800  # 7 days
+            
+            if [ $cache_age -lt $max_offline_age ]; then
+                # Mark as validated for this session
+                touch "$VALIDATION_FLAG"
+                return 0
+            else
+                echo "License cache expired, re-validating..."
+            fi
         fi
     fi
     
     # Show license prompt
+    echo "========================================"
+    echo "    PREMIUM INSTALLER - LICENSE CHECK   "
+    echo "========================================"
+    echo ""
     echo "This installer requires a valid license key."
     echo "Please enter your license key below."
     echo ""
@@ -163,8 +79,10 @@ EOF
             continue
         fi
         
-        # Validate license
+        # Validate with server
         if validate_with_server "$license_key"; then
+            # Mark as validated for this session
+            touch "$VALIDATION_FLAG"
             echo ""
             return 0
         else
@@ -180,7 +98,157 @@ EOF
     exit 1
 }
 
-# ========= RUN LICENSE VALIDATION =========
+# ========= HELPER FUNCTIONS =========
+generate_hwid() {
+    if [ -f "$HWID_FILE" ]; then
+        cat "$HWID_FILE"
+        return
+    fi
+    
+    local hwid_parts=""
+    
+    # Collect system information
+    if [ -f "/etc/machine-id" ]; then
+        hwid_parts="${hwid_parts}$(cat /etc/machine-id 2>/dev/null || echo "NOMACHINEID")"
+    fi
+    
+    if [ -f "/proc/cpuinfo" ]; then
+        cpu_id=$(grep -m1 "serial" /proc/cpuinfo 2>/dev/null | awk '{print $3}')
+        if [ -n "$cpu_id" ]; then
+            hwid_parts="${hwid_parts}${cpu_id}"
+        else
+            cpu_model=$(grep -m1 "model name" /proc/cpuinfo 2>/dev/null | md5sum | cut -c1-16)
+            hwid_parts="${hwid_parts}${cpu_model}"
+        fi
+    fi
+    
+    mac_address=$(ip link show 2>/dev/null | awk '/ether/ {print $2; exit}' | tr -d ':')
+    if [ -n "$mac_address" ]; then
+        hwid_parts="${hwid_parts}${mac_address}"
+    fi
+    
+    if [ -z "$hwid_parts" ]; then
+        hwid_parts=$(date +%s%N | sha256sum | head -c 32)
+    fi
+    
+    HWID=$(echo -n "$hwid_parts" | sha256sum | awk '{print $1}')
+    echo "$HWID" > "$HWID_FILE"
+    chmod 600 "$HWID_FILE"
+    echo "$HWID"
+}
+
+validate_with_server() {
+    local license_key="$1"
+    local hwid=$(generate_hwid)
+    local hostname=$(hostname)
+    local ip_address=$(hostname -I | awk '{print $1}' 2>/dev/null || echo "127.0.0.1")
+    
+    echo "Validating license..."
+    
+    local response=$(curl -s -X POST "$LICENSE_SERVER/validate" \
+        -H "Content-Type: application/json" \
+        -d "{\"license_key\":\"$license_key\",\"hwid\":\"$hwid\",\"hostname\":\"$hostname\"}" \
+        --max-time 10 2>/dev/null)
+    
+    if [ $? -eq 0 ]; then
+        local valid=$(echo "$response" | grep -o '"valid":[^,]*' | cut -d: -f2 | tr -d ' ')
+        if [ "$valid" = "true" ]; then
+            # Cache the successful validation
+            cat > "$LICENSE_CACHE" << EOF
+{
+    "license_key": "$license_key",
+    "hwid": "$hwid",
+    "hostname": "$hostname",
+    "ip_address": "$ip_address",
+    "validated_at": $(date +%s),
+    "validated_date": "$(date '+%Y-%m-%d %H:%M:%S')"
+}
+EOF
+            chmod 600 "$LICENSE_CACHE"
+            echo "✓ License validated successfully!"
+            return 0
+        else
+            local message=$(echo "$response" | grep -o '"message":"[^"]*"' | cut -d'"' -f4)
+            echo "✗ License invalid: ${message:-Unknown error}"
+            return 1
+        fi
+    else
+        echo "✗ Cannot connect to license server"
+        return 1
+    fi
+}
+
+display_license_info() {
+    if [ -f "$LICENSE_CACHE" ]; then
+        echo -e "\n${CYAN}=== LICENSE INFORMATION ===${NC}"
+        
+        # Extract license info
+        cached_key=$(grep -o '"license_key":"[^"]*"' "$LICENSE_CACHE" 2>/dev/null | cut -d'"' -f4)
+        hwid=$(grep -o '"hwid":"[^"]*"' "$LICENSE_CACHE" 2>/dev/null | cut -d'"' -f4)
+        hostname=$(grep -o '"hostname":"[^"]*"' "$LICENSE_CACHE" 2>/dev/null | cut -d'"' -f4)
+        ip_address=$(grep -o '"ip_address":"[^"]*"' "$LICENSE_CACHE" 2>/dev/null | cut -d'"' -f4)
+        validated_at=$(grep -o '"validated_at":[0-9]*' "$LICENSE_CACHE" | cut -d: -f2)
+        validated_date=$(grep -o '"validated_date":"[^"]*"' "$LICENSE_CACHE" 2>/dev/null | cut -d'"' -f4)
+        
+        # Display license info
+        if [ -n "$cached_key" ]; then
+            # Format: XXXX-XXXX-XXXX-XXXX
+            if echo "$cached_key" | grep -qE '^[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}$'; then
+                echo "License: $cached_key"
+            else
+                echo "License: ${cached_key:0:8}...${cached_key: -4}"
+            fi
+            
+            # Display status
+            current_hwid=$(generate_hwid)
+            if [ "$hwid" = "$current_hwid" ]; then
+                echo "Status: ${GREEN}Valid ✓${NC}"
+            else
+                echo "Status: ${YELLOW}HWID Mismatch ⚠${NC}"
+            fi
+            
+            # Display machine info
+            if [ -n "$hostname" ]; then
+                echo "Hostname: $hostname"
+            fi
+            
+            if [ -n "$ip_address" ]; then
+                echo "IP Address: $ip_address"
+            fi
+            
+            # Display validation time
+            if [ -n "$validated_date" ]; then
+                echo "Validated: $validated_date"
+            elif [ -n "$validated_at" ]; then
+                validated_date=$(date -d "@$validated_at" "+%Y-%m-%d %H:%M:%S" 2>/dev/null || echo "Unknown")
+                echo "Validated: $validated_date"
+            fi
+            
+            # Check if validation is recent (within 7 days)
+            if [ -n "$validated_at" ]; then
+                current_time=$(date +%s)
+                cache_age=$((current_time - validated_at))
+                max_offline_age=604800  # 7 days
+                
+                if [ $cache_age -gt $max_offline_age ]; then
+                    echo -e "${YELLOW}Warning: License cache expired (${cache_age} seconds old)${NC}"
+                fi
+            fi
+        else
+            echo "License: Not found in cache"
+        fi
+    else
+        echo -e "\n${CYAN}=== LICENSE INFORMATION ===${NC}"
+        echo "No license information available"
+    fi
+}
+
+# ========= INITIAL SETUP =========
+# Create cache directory
+mkdir -p "$CACHE_DIR"
+chmod 700 "$CACHE_DIR"
+
+# Run license validation (only if needed)
 validate_license
 
 # ========= CONTINUE WITH NORMAL INSTALLER =========
@@ -365,22 +433,10 @@ while true; do
             echo "Blueprint: $(command -v blueprint >/dev/null && echo "Installed" || echo "Not installed")"
             echo "System: $(uname -s -r)"
             echo "Hostname: $(hostname)"
+            echo "IP Address: $(hostname -I | awk '{print $1}' 2>/dev/null || echo "Not available")"
             
-            # License info
-            LICENSE_CACHE="/etc/panel_installer/license.cache"
-            if [ -f "$LICENSE_CACHE" ]; then
-                echo -e "\n${CYAN}=== LICENSE INFORMATION ===${NC}"
-                cached_key=$(grep -o '"license_key":"[^"]*"' "$LICENSE_CACHE" 2>/dev/null | cut -d'"' -f4)
-                if [ -n "$cached_key" ]; then
-                    echo "License: ${cached_key:0:8}...${cached_key: -4}"
-                    
-                    validated_at=$(grep -o '"validated_at":[0-9]*' "$LICENSE_CACHE" | cut -d: -f2)
-                    if [ -n "$validated_at" ]; then
-                        validated_date=$(date -d "@$validated_at" "+%Y-%m-%d %H:%M:%S" 2>/dev/null || echo "Unknown")
-                        echo "Last Validated: $validated_date"
-                    fi
-                fi
-            fi
+            # Display license information
+            display_license_info
             
             echo -e "\n${YELLOW}Press Enter to continue...${NC}"
             read -r
@@ -390,6 +446,9 @@ while true; do
             echo "Thank you for using Premium Panel Installer!"
             echo ""
             print_success "Goodbye!"
+            
+            # Clean up session validation flag
+            rm -f "$VALIDATION_FLAG"
             exit 0
             ;;
         *)
