@@ -17,7 +17,7 @@ validate_license() {
     echo ""
     
     # Configuration
-    LICENSE_SERVER="http://localhost:5000/api"
+    LICENSE_SERVER="https://ghcptz-5000.csb.app/api"
     CACHE_DIR="/etc/panel_installer"
     LICENSE_CACHE="$CACHE_DIR/license.cache"
     HWID_FILE="$CACHE_DIR/hwid"
