@@ -156,7 +156,7 @@ EOF
         fi
         
         # Validate format
-        if ! echo "$license_key" | grep -qE '^[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$'; then
+        if ! echo "$license_key" | grep -qE '^[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}$'; then
             echo "✗ Invalid format. Expected: XXXX-XXXX-XXXX-XXXX"
             attempts=$((attempts + 1))
             echo ""
