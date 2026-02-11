@@ -53,7 +53,7 @@ validate_license() {
     echo "This installer requires a valid license key."
     echo "Please enter your license key below."
     echo ""
-    echo "Format: XXXX-XXXX-XXXX-XXXX"
+    echo "Format: XXXXX-XXXXX-XXXXX-XXXXX"
     echo ""
     
     local attempts=0
@@ -71,9 +71,9 @@ validate_license() {
             exit 1
         fi
         
-        # Validate format
+        # Validate format - Fixed to match 5-5-5-5 format
         if ! echo "$license_key" | grep -qE '^[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}$'; then
-            echo "✗ Invalid format. Expected: XXXX-XXXX-XXXX-XXXX"
+            echo "✗ Invalid format. Expected: XXXXX-XXXXX-XXXXX-XXXXX"
             attempts=$((attempts + 1))
             echo ""
             continue
@@ -143,15 +143,32 @@ validate_with_server() {
     local hostname=$(hostname)
     local ip_address=$(hostname -I | awk '{print $1}' 2>/dev/null || echo "127.0.0.1")
     
-    echo "Validating license..."
+    echo -n "Validating license"
+    for i in {1..3}; do
+        echo -n "."
+        sleep 0.3
+    done
+    echo ""
+    
+    # Debug: Show request details
+    # echo "DEBUG: License: $license_key"
+    # echo "DEBUG: HWID: $hwid"
+    # echo "DEBUG: Hostname: $hostname"
+    # echo "DEBUG: Server: $LICENSE_SERVER/validate"
     
     local response=$(curl -s -X POST "$LICENSE_SERVER/validate" \
         -H "Content-Type: application/json" \
         -d "{\"license_key\":\"$license_key\",\"hwid\":\"$hwid\",\"hostname\":\"$hostname\"}" \
         --max-time 10 2>/dev/null)
     
-    if [ $? -eq 0 ]; then
-        local valid=$(echo "$response" | grep -o '"valid":[^,]*' | cut -d: -f2 | tr -d ' ')
+    # Debug: Show full response
+    # echo "DEBUG: Response: $response"
+    
+    if [ $? -eq 0 ] && [ -n "$response" ]; then
+        # Check if valid field exists and is true
+        local valid=$(echo "$response" | grep -o '"valid":[^,}]*' | cut -d: -f2 | tr -d ' "')
+        # Debug: echo "DEBUG: Valid field: '$valid'"
+        
         if [ "$valid" = "true" ]; then
             # Cache the successful validation
             cat > "$LICENSE_CACHE" << EOF
@@ -166,14 +183,38 @@ validate_with_server() {
 EOF
             chmod 600 "$LICENSE_CACHE"
             echo "✓ License validated successfully!"
+            
+            # Also extract and show the message
+            local message=$(echo "$response" | grep -o '"message":"[^"]*"' | cut -d'"' -f4)
+            if [ -n "$message" ]; then
+                echo "Message: $message"
+            fi
             return 0
         else
+            # Try to get error message
             local message=$(echo "$response" | grep -o '"message":"[^"]*"' | cut -d'"' -f4)
-            echo "✗ License invalid: ${message:-Unknown error}"
+            if [ -n "$message" ]; then
+                echo "✗ $message"
+            else
+                # Try alternative parsing for message
+                message=$(echo "$response" | sed -n 's/.*"message":"\([^"]*\)".*/\1/p')
+                if [ -n "$message" ]; then
+                    echo "✗ $message"
+                else
+                    echo "✗ License invalid (no valid field in response)"
+                    # Debug: echo "Full response: $response"
+                fi
+            fi
             return 1
         fi
     else
-        echo "✗ Cannot connect to license server"
+        if [ $? -eq 28 ]; then
+            echo "✗ Connection timeout. Please check your internet connection."
+        elif [ $? -eq 7 ]; then
+            echo "✗ Cannot connect to license server. Make sure it's running."
+        else
+            echo "✗ Failed to validate license (server error or no response)"
+        fi
         return 1
     fi
 }
@@ -192,7 +233,7 @@ display_license_info() {
         
         # Display license info
         if [ -n "$cached_key" ]; then
-            # Format: XXXX-XXXX-XXXX-XXXX
+            # Format: XXXXX-XXXXX-XXXXX-XXXXX
             if echo "$cached_key" | grep -qE '^[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}$'; then
                 echo "License: $cached_key"
             else
@@ -248,6 +289,14 @@ display_license_info() {
 mkdir -p "$CACHE_DIR"
 chmod 700 "$CACHE_DIR"
 
+# Colors for output
+RED='\033[1;31m'
+GREEN='\033[1;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[1;34m'
+CYAN='\033[1;36m'
+NC='\033[0m'
+
 # Run license validation (only if needed)
 validate_license
 
@@ -274,14 +323,6 @@ download_module() {
         return 1
     fi
 }
-
-# Colors for output
-RED='\033[1;31m'
-GREEN='\033[1;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[1;34m'
-CYAN='\033[1;36m'
-NC='\033[0m'
 
 # Simple logging functions (will be overridden by core_setup)
 print_success() { echo -e "${GREEN}✓${NC} $1"; }
