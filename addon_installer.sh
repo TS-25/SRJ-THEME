@@ -125,6 +125,13 @@ install_simplefooters() {
     install_addon "simplefooters" "https://github.com/TS-25/SRJ-THEME/releases/latest/download/simplefooters.blueprint"
 }
 
+install_mcpack() {
+    cd /var/www/pterodactyl 
+    wget https://github.com/TS-25/SRJ-THEME/releases/latest/download/mcpack.zip
+    unzip mcpack.zip
+    php artisan mcpack    
+}
+    
 install_votifiertester() {
     warning_prompt
     print_info "Installing Votifier Tester..."
@@ -208,6 +215,7 @@ show_addon_menu() {
     echo "19) List Installed Addons"
     echo "20) Remove Addon"
     echo "21) Back to Main Menu"
+    echo "22) All addon(not blueprint)"    
     echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 }
 
@@ -244,6 +252,7 @@ handle_addon_choice() {
             print_error "Invalid option"
             sleep 1
             ;;
+        22) install_mcpack ;;
     esac
     return 0
 }
@@ -254,5 +263,5 @@ export -f install_mcplugins install_subdomain install_resource_manager install_p
 export -f install_player_manager install_huxregister install_loader install_announce
 export -f install_minecraftpluginmanager install_serverbackgrounds install_simplefavicons
 export -f install_startupchanger install_versionchanger
-export -f install_mclogs install_bluetables install_mctools install_simplefooters install_votifiertester
+export -f install_mclogs install_bluetables install_mctools install_simplefooters install_votifiertester install_mcpack
 export -f show_addon_menu handle_addon_choice
